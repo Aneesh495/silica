@@ -1,0 +1,108 @@
+#ifndef SILICA_VECTOR_CLH
+#define SILICA_VECTOR_CLH
+
+#include "math.clh"
+
+// Ray structure in 3D Euclidean space
+typedef struct {
+    float3 origin;
+    float3 direction;
+    float3 inv_direction;
+    float t_min;
+    float t_max;
+} Ray3D;
+
+// Creates Ray3D with precomputed safe inverse directions
+inline Ray3D make_ray3d(float3 origin, float3 direction, float t_min, float t_max) {
+    Ray3D r;
+    r.origin = origin;
+    r.direction = normalize(direction);
+    r.inv_direction = (float3)(
+        safe_inv_f(r.direction.x),
+        safe_inv_f(r.direction.y),
+        safe_inv_f(r.direction.z)
+    );
+    r.t_min = t_min;
+    r.t_max = t_max;
+    return r;
+}
+
+// Axis-Aligned Bounding Box (AABB) intersection using Kay-Kajiya slab method
+inline bool intersect_aabb(const Ray3D* ray, float3 box_min, float3 box_max, float* t_near, float* t_far) {
+    float3 t0 = (box_min - ray->origin) * ray->inv_direction;
+    float3 t1 = (box_max - ray->origin) * ray->inv_direction;
+
+    float3 tmin_v = fmin(t0, t1);
+    float3 tmax_v = fmax(t0, t1);
+
+    float enter = fmax(fmax(tmin_v.x, tmin_v.y), tmin_v.z);
+    float exit  = fmin(fmin(tmax_v.x, tmax_v.y), tmax_v.z);
+
+    enter = fmax(enter, ray->t_min);
+    exit  = fmin(exit, ray->t_max);
+
+    if (enter <= exit && exit >= 0.0f) {
+        *t_near = enter;
+        *t_far  = exit;
+        return true;
+    }
+
+    *t_near = 0.0f;
+    *t_far  = 0.0f;
+    return false;
+}
+
+// Quaternion multiplication: q1 * q2
+inline float4 quat_mul(float4 q1, float4 q2) {
+    return (float4)(
+        q1.w * q2.x + q1.x * q2.w + q1.y * q2.z - q1.z * q2.y,
+        q1.w * q2.y - q1.x * q2.z + q1.y * q2.w + q1.z * q2.x,
+        q1.w * q2.z + q1.x * q2.y - q1.y * q2.x + q1.z * q2.w,
+        q1.w * q2.w - q1.x * q2.x - q1.y * q2.y - q1.z * q2.z
+    );
+}
+
+// Rotates 3D vector by normalized unit quaternion
+inline float3 quat_rotate_vector(float4 q, float3 v) {
+    float3 q_xyz = (float3)(q.x, q.y, q.z);
+    float3 t = 2.0f * cross(q_xyz, v);
+    return v + q.w * t + cross(q_xyz, t);
+}
+
+// Transforms 3D point by 4x4 matrix stored in row-major order
+inline float3 mat4_transform_point(const float* mat, float3 p) {
+    float x = mat[0] * p.x + mat[1] * p.y + mat[2] * p.z + mat[3];
+    float y = mat[4] * p.x + mat[5] * p.y + mat[6] * p.z + mat[7];
+    float z = mat[8] * p.x + mat[9] * p.y + mat[10] * p.z + mat[11];
+    float w = mat[12] * p.x + mat[13] * p.y + mat[14] * p.z + mat[15];
+
+    float inv_w = fabs(w) > EPSILON_F ? (1.0f / w) : 1.0f;
+    return (float3)(x * inv_w, y * inv_w, z * inv_w);
+}
+
+// Transforms 3D direction vector by upper-left 3x3 of 4x4 matrix
+inline float3 mat4_transform_direction(const float* mat, float3 dir) {
+    return (float3)(
+        mat[0] * dir.x + mat[1] * dir.y + mat[2] * dir.z,
+        mat[4] * dir.x + mat[5] * dir.y + mat[6] * dir.z,
+        mat[8] * dir.x + mat[9] * dir.y + mat[10] * dir.z
+    );
+}
+
+// Projects 3D camera coordinate point to 2D image coordinates with intrinsics
+inline float2 camera_project(float3 p_cam, float fx, float fy, float cx, float cy) {
+    float inv_z = safe_inv_f(p_cam.z);
+    return (float2)(
+        fx * p_cam.x * inv_z + cx,
+        fy * p_cam.y * inv_z + cy
+    );
+}
+
+// Back-projects 2D image coordinates and depth to 3D camera space point
+inline float3 camera_backproject(float u, float v, float depth, float fx, float fy, float cx, float cy) {
+    float x = (u - cx) * depth / fx;
+    float y = (v - cy) * depth / fy;
+    return (float3)(x, y, depth);
+}
+
+#endif // SILICA_VECTOR_CLH

@@ -1,0 +1,99 @@
+#ifndef SILICA_MATH_CLH
+#define SILICA_MATH_CLH
+
+#define PI_F           3.14159265358979323846f
+#define TWO_PI_F       6.28318530717958647692f
+#define HALF_PI_F      1.57079632679489661923f
+#define INV_PI_F       0.31830988618379067154f
+#define INV_TWO_PI_F   0.15915494309189533577f
+#define SQRT2_F        1.41421356237309504880f
+#define INV_SQRT2_F    0.70710678118654752440f
+#define DEG_TO_RAD_F   0.01745329251994329577f
+#define RAD_TO_DEG_F   57.2957795130823208768f
+#define EPSILON_F      1.0e-7f
+#define LARGE_FLOAT_F  1.0e30f
+
+// Clamps value between lower and upper bounds
+inline float clamp_f(float val, float min_val, float max_val) {
+    return fmin(fmax(val, min_val), max_val);
+}
+
+// Clamps integer between lower and upper bounds
+inline int clamp_i(int val, int min_val, int max_val) {
+    return min(max(val, min_val), max_val);
+}
+
+// Linear interpolation between a and b by factor t
+inline float lerp_f(float a, float b, float t) {
+    return a + t * (b - a);
+}
+
+// Smooth Hermite interpolation between 0 and 1
+inline float smoothstep_f(float edge0, float edge1, float x) {
+    float t = clamp_f((x - edge0) / (edge1 - edge0 + EPSILON_F), 0.0f, 1.0f);
+    return t * t * (3.0f - 2.0f * t);
+}
+
+// Safe inverse preventing division by zero
+inline float safe_inv_f(float x) {
+    return fabs(x) > EPSILON_F ? (1.0f / x) : (x >= 0.0f ? LARGE_FLOAT_F : -LARGE_FLOAT_F);
+}
+
+// Safe division preventing division by zero
+inline float safe_div_f(float numerator, float denominator) {
+    return fabs(denominator) > EPSILON_F ? (numerator / denominator) : 0.0f;
+}
+
+// 2D Bilinear interpolation inside normalized unit square [0, 1]x[0, 1]
+inline float bilinear_interp_unit(float v00, float v10, float v01, float v11, float tx, float ty) {
+    float top = lerp_f(v00, v10, tx);
+    float bot = lerp_f(v01, v11, tx);
+    return lerp_f(top, bot, ty);
+}
+
+// 3D Trilinear interpolation inside normalized unit cube [0, 1]^3
+inline float trilinear_interp_unit(
+    float c000, float c100, float c010, float c110,
+    float c001, float c101, float c011, float c111,
+    float tx, float ty, float tz) {
+    
+    float c00 = lerp_f(c000, c100, tx);
+    float c10 = lerp_f(c010, c110, tx);
+    float c01 = lerp_f(c001, c101, tx);
+    float c11 = lerp_f(c011, c111, tx);
+
+    float c0 = lerp_f(c00, c10, ty);
+    float c1 = lerp_f(c01, c11, ty);
+
+    return lerp_f(c0, c1, tz);
+}
+
+// Fast polynomial sine approximation
+inline float fast_sin_f(float x) {
+    // Normalize to [-pi, pi]
+    x = x - TWO_PI_F * floor(x * INV_TWO_PI_F + 0.5f);
+    float x2 = x * x;
+    return x * (1.0f - x2 * (0.16666666f - x2 * 0.00833333f));
+}
+
+// Fast polynomial cosine approximation
+inline float fast_cos_f(float x) {
+    return fast_sin_f(x + HALF_PI_F);
+}
+
+// Fast square function
+inline float sqr_f(float x) {
+    return x * x;
+}
+
+// 3D vector length squared
+inline float length_squared_3(float3 v) {
+    return v.x * v.x + v.y * v.y + v.z * v.z;
+}
+
+// 4D vector length squared
+inline float length_squared_4(float4 v) {
+    return v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
+}
+
+#endif // SILICA_MATH_CLH
