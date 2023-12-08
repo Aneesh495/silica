@@ -1,0 +1,100 @@
+#ifndef SILICA_MEMORY_CLH
+#define SILICA_MEMORY_CLH
+
+// Hardware bank conflict mitigation stride padding.
+// For GPUs with 32 banks (e.g. Apple Silicon, AMD RDNA, NVIDIA),
+// power-of-two 2D tiles in local memory experience 32-way bank conflicts
+// when indexed vertically (stride 32, 64, etc.).
+// Adding 1 element of padding per row spreads columns across distinct banks.
+#define LDS_BANK_COUNT 32
+#define LDS_STRIDE_PAD(dim) (((dim) % LDS_BANK_COUNT == 0) ? ((dim) + 1) : (dim))
+
+// Boundary address handling modes
+#define BORDER_CLAMP_EDGE   0
+#define BORDER_CLAMP_ZERO   1
+#define BORDER_REFLECT      2
+#define BORDER_WRAP         3
+
+// Clamps 1D coordinate according to boundary mode
+inline int handle_border_1d(int coord, int size, int mode) {
+    if (coord >= 0 && coord < size) {
+        return coord;
+    }
+    switch (mode) {
+        case BORDER_CLAMP_EDGE:
+            return clamp(coord, 0, size - 1);
+        case BORDER_REFLECT: {
+            if (coord < 0) return -coord - 1;
+            if (coord >= size) return 2 * size - coord - 1;
+            return coord;
+        }
+        case BORDER_WRAP: {
+            int m = coord % size;
+            return m < 0 ? m + size : m;
+        }
+        case BORDER_CLAMP_ZERO:
+        default:
+            return -1; // Indicates zero fill required
+    }
+}
+
+// Clamps 2D coordinates according to boundary mode
+inline int2 handle_border_2d(int2 coord, int2 size, int mode) {
+    return (int2)(
+        handle_border_1d(coord.x, size.x, mode),
+        handle_border_1d(coord.y, size.y, mode)
+    );
+}
+
+// Work-group barrier synchronizations
+inline void sync_local(void) {
+    barrier(CLK_LOCAL_MEM_FENCE);
+}
+
+inline void sync_global(void) {
+    barrier(CLK_GLOBAL_MEM_FENCE);
+}
+
+inline void sync_all(void) {
+    barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);
+}
+
+// Safe read from 2D float image buffer in row-major order with border handling
+inline float read_image_2d_safe(__global const float* img, int x, int y, int width, int height, int mode, float default_val) {
+    int cx = handle_border_1d(x, width, mode);
+    int cy = handle_border_1d(y, height, mode);
+    if (cx < 0 || cy < 0) {
+        return default_val;
+    }
+    return img[cy * width + cx];
+}
+
+// Safe read from 2D uint8 image buffer in row-major order with border handling
+inline uchar read_image_2d_u8_safe(__global const uchar* img, int x, int y, int width, int height, int mode, uchar default_val) {
+    int cx = handle_border_1d(x, width, mode);
+    int cy = handle_border_1d(y, height, mode);
+    if (cx < 0 || cy < 0) {
+        return default_val;
+    }
+    return img[cy * width + cx];
+}
+
+// Safe read from 3D float volume buffer in z-y-x row-major order with border handling
+inline float read_volume_3d_safe(
+    __global const float* vol,
+    int x, int y, int z,
+    int width, int height, int depth,
+    int mode, float default_val) {
+    
+    int cx = handle_border_1d(x, width, mode);
+    int cy = handle_border_1d(y, height, mode);
+    int cz = handle_border_1d(z, depth, mode);
+
+    if (cx < 0 || cy < 0 || cz < 0) {
+        return default_val;
+    }
+    size_t idx = ((size_t)cz * (size_t)height + (size_t)cy) * (size_t)width + (size_t)cx;
+    return vol[idx];
+}
+
+#endif // SILICA_MEMORY_CLH
