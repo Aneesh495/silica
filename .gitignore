@@ -21,3 +21,8 @@ data/output/
 *.log
 *.profdata
 *.profraw
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
