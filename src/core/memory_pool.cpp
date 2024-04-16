@@ -57,10 +57,12 @@ void MemoryPool::release(std::shared_ptr<Buffer> buffer) {
 void MemoryPool::trim() {
     std::lock_guard<std::mutex> lock(mutex_);
     for (auto& [bucket, vec] : pool_) {
-        for (const auto& buf : vec) {
-            if (stats_.total_allocated_bytes >= bucket) {
-                stats_.total_allocated_bytes -= bucket;
-            }
+        size_t count = vec.size();
+        size_t released = bucket * count;
+        if (stats_.total_allocated_bytes >= released) {
+            stats_.total_allocated_bytes -= released;
+        } else {
+            stats_.total_allocated_bytes = 0;
         }
         vec.clear();
     }

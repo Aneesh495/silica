@@ -82,7 +82,7 @@ std::vector<std::shared_ptr<PipelineNode>> Pipeline::topological_order() const {
 }
 
 void Pipeline::validate_acyclic() const {
-    topological_order();
+    (void)topological_order();
 }
 
 } // namespace silica::pipeline
