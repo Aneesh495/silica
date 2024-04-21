@@ -56,6 +56,7 @@ file(GLOB_RECURSE SILICA_SRC_FILES
     "src/features/*.cpp"
     "src/flow/*.cpp"
     "src/stereo/*.cpp"
+    "src/vision/*.cpp"
     "src/tomography/*.cpp"
     "src/spatial/*.cpp"
     "src/pointcloud/*.cpp"
