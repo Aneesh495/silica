@@ -65,7 +65,16 @@ Event Kernel::dispatch(const std::shared_ptr<CommandQueue>& queue,
     size_t lws[3] = {work_size.local.x, work_size.local.y, work_size.local.z};
 
     const size_t* local_work_size = nullptr;
-    if (work_size.local.x > 0 && work_size.local.y > 0 && work_size.local.z > 0) {
+    bool has_local = false;
+    if (work_size.dimensions == 1 && work_size.local.x > 0) {
+        has_local = true;
+    } else if (work_size.dimensions == 2 && work_size.local.x > 0 && work_size.local.y > 0) {
+        has_local = true;
+    } else if (work_size.dimensions == 3 && work_size.local.x > 0 && work_size.local.y > 0 && work_size.local.z > 0) {
+        has_local = true;
+    }
+
+    if (has_local) {
         local_work_size = lws;
     }
 

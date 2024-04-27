@@ -39,7 +39,7 @@ __kernel void kernel_tsdf_integrate_frame(
     );
 
     // Transform world point into camera coordinate frame: p_cam = w2c * p_world
-    float3 p_cam = mat4_transform_point(w2c_matrix, p_world);
+    float3 p_cam = mat4_transform_point_const(w2c_matrix, p_world);
 
     if (p_cam.z <= 0.1f) return; // Behind camera plane
 

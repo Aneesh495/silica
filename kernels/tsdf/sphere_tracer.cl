@@ -84,8 +84,8 @@ __kernel void kernel_tsdf_raycast(
 
     // Generate camera ray in world space
     float3 ray_dir_cam = normalize((float3)(((float)u - cx) / fx, ((float)v - cy) / fy, 1.0f));
-    float3 ray_orig_world = mat4_transform_point(c2w_matrix, (float3)(0.0f, 0.0f, 0.0f));
-    float3 ray_dir_world  = mat4_transform_direction(c2w_matrix, ray_dir_cam);
+    float3 ray_orig_world = mat4_transform_point_const(c2w_matrix, (float3)(0.0f, 0.0f, 0.0f));
+    float3 ray_dir_world  = mat4_transform_direction_const(c2w_matrix, ray_dir_cam);
 
     Ray3D ray = make_ray3d(ray_orig_world, ray_dir_world, 0.1f, 10.0f);
 

@@ -70,17 +70,33 @@ inline float3 quat_rotate_vector(float4 q, float3 v) {
 }
 
 // Transforms 3D point by 4x4 matrix stored in row-major order
+inline float3 mat4_transform_point_const(__constant const float* mat, float3 p) {
+    float x = mat[0] * p.x + mat[1] * p.y + mat[2] * p.z + mat[3];
+    float y = mat[4] * p.x + mat[5] * p.y + mat[6] * p.z + mat[7];
+    float z = mat[8] * p.x + mat[9] * p.y + mat[10] * p.z + mat[11];
+    float w = mat[12] * p.x + mat[13] * p.y + mat[14] * p.z + mat[15];
+    float inv_w = fabs(w) > EPSILON_F ? (1.0f / w) : 1.0f;
+    return (float3)(x * inv_w, y * inv_w, z * inv_w);
+}
+
 inline float3 mat4_transform_point(const float* mat, float3 p) {
     float x = mat[0] * p.x + mat[1] * p.y + mat[2] * p.z + mat[3];
     float y = mat[4] * p.x + mat[5] * p.y + mat[6] * p.z + mat[7];
     float z = mat[8] * p.x + mat[9] * p.y + mat[10] * p.z + mat[11];
     float w = mat[12] * p.x + mat[13] * p.y + mat[14] * p.z + mat[15];
-
     float inv_w = fabs(w) > EPSILON_F ? (1.0f / w) : 1.0f;
     return (float3)(x * inv_w, y * inv_w, z * inv_w);
 }
 
 // Transforms 3D direction vector by upper-left 3x3 of 4x4 matrix
+inline float3 mat4_transform_direction_const(__constant const float* mat, float3 dir) {
+    return (float3)(
+        mat[0] * dir.x + mat[1] * dir.y + mat[2] * dir.z,
+        mat[4] * dir.x + mat[5] * dir.y + mat[6] * dir.z,
+        mat[8] * dir.x + mat[9] * dir.y + mat[10] * dir.z
+    );
+}
+
 inline float3 mat4_transform_direction(const float* mat, float3 dir) {
     return (float3)(
         mat[0] * dir.x + mat[1] * dir.y + mat[2] * dir.z,

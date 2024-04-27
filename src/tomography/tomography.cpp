@@ -89,8 +89,10 @@ std::shared_ptr<core::Buffer> TomographyEngine::forward_radon_2d(
         geometry.detector_spacing
     );
 
+    size_t g_det = ((static_cast<size_t>(geometry.num_detectors) + 15) / 16) * 16;
+    size_t g_ang = ((static_cast<size_t>(geometry.num_angles) + 15) / 16) * 16;
     core::WorkSize ws(
-        {static_cast<size_t>(geometry.num_detectors), static_cast<size_t>(geometry.num_angles)},
+        {g_det, g_ang},
         {16, 16}
     );
 
@@ -120,8 +122,10 @@ std::shared_ptr<core::Buffer> TomographyEngine::apply_ramp_filter(
         geometry.detector_spacing
     );
 
+    size_t g_det_f = ((static_cast<size_t>(geometry.num_detectors) + 15) / 16) * 16;
+    size_t g_ang_f = ((static_cast<size_t>(geometry.num_angles) + 15) / 16) * 16;
     core::WorkSize ws(
-        {static_cast<size_t>(geometry.num_detectors), static_cast<size_t>(geometry.num_angles)},
+        {g_det_f, g_ang_f},
         {16, 16}
     );
 
@@ -154,8 +158,10 @@ std::shared_ptr<core::Buffer> TomographyEngine::reconstruct_fbp_2d(
         geometry.detector_spacing
     );
 
+    size_t g_w = ((static_cast<size_t>(out_width) + 15) / 16) * 16;
+    size_t g_h = ((static_cast<size_t>(out_height) + 15) / 16) * 16;
     core::WorkSize ws(
-        {static_cast<size_t>(out_width), static_cast<size_t>(out_height)},
+        {g_w, g_h},
         {16, 16}
     );
 
@@ -188,13 +194,19 @@ std::shared_ptr<core::Buffer> TomographyEngine::solve_sirt(
     float pixel_size = 1.0f;
     uint32_t total_bins = static_cast<uint32_t>(geometry.num_angles * geometry.num_detectors);
 
+    size_t g_det_s = ((static_cast<size_t>(geometry.num_detectors) + 15) / 16) * 16;
+    size_t g_ang_s = ((static_cast<size_t>(geometry.num_angles) + 15) / 16) * 16;
     core::WorkSize sim_ws(
-        {static_cast<size_t>(geometry.num_detectors), static_cast<size_t>(geometry.num_angles)},
+        {g_det_s, g_ang_s},
         {16, 16}
     );
-    core::WorkSize res_ws({static_cast<size_t>(total_bins)}, {256});
+    size_t g_bins = ((static_cast<size_t>(total_bins) + 255) / 256) * 256;
+    core::WorkSize res_ws({g_bins}, {256});
+
+    size_t g_w_s = ((static_cast<size_t>(img_width) + 15) / 16) * 16;
+    size_t g_h_s = ((static_cast<size_t>(img_height) + 15) / 16) * 16;
     core::WorkSize update_ws(
-        {static_cast<size_t>(img_width), static_cast<size_t>(img_height)},
+        {g_w_s, g_h_s},
         {16, 16}
     );
 

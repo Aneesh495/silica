@@ -40,7 +40,8 @@ std::shared_ptr<core::Buffer> PointCloudEngine::compute_morton_codes(
     };
 
     kernel->set_args(*points, *morton_buf, b_min, b_inv, static_cast<uint32_t>(num_points));
-    core::WorkSize ws({num_points}, {256});
+    size_t gws = ((num_points + 255) / 256) * 256;
+    core::WorkSize ws({gws}, {256});
     kernel->dispatch(queue_, ws);
 
     return morton_buf;
@@ -80,7 +81,8 @@ std::shared_ptr<core::Buffer> PointCloudEngine::downsample_voxel_grid(
         static_cast<uint32_t>(num_points)
     );
 
-    core::WorkSize ws({num_points}, {256});
+    size_t gws_pts = ((num_points + 255) / 256) * 256;
+    core::WorkSize ws({gws_pts}, {256});
     accum_kernel->dispatch(queue_, ws);
 
     // Finalize
@@ -94,11 +96,12 @@ std::shared_ptr<core::Buffer> PointCloudEngine::downsample_voxel_grid(
         *counts_buf,
         *out_pts_buf,
         *counter_buf,
-        total_voxels,
+        static_cast<uint32_t>(total_voxels),
         static_cast<uint32_t>(num_points)
     );
 
-    core::WorkSize f_ws({total_voxels}, {256});
+    size_t gws_vox = ((total_voxels + 255) / 256) * 256;
+    core::WorkSize f_ws({gws_vox}, {256});
     finalize_kernel->dispatch(queue_, f_ws);
 
     std::vector<uint32_t> final_count(1, 0);
@@ -122,7 +125,8 @@ std::shared_ptr<core::Buffer> PointCloudEngine::estimate_normals(
     cl_float3 vp{viewpoint[0], viewpoint[1], viewpoint[2], 0.0f};
     kernel->set_args(*points, *normals_buf, vp, static_cast<uint32_t>(num_points), search_window);
 
-    core::WorkSize ws({num_points}, {256});
+    size_t gws_norm = ((num_points + 255) / 256) * 256;
+    core::WorkSize ws({gws_norm}, {256});
     kernel->dispatch(queue_, ws);
 
     return normals_buf;

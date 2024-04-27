@@ -157,8 +157,12 @@ TriangleMesh SpatialEngine::extract_mesh(float iso_level) {
         iso_level
     );
 
+    size_t gx = ((static_cast<size_t>(config_.vx - 1) + 7) / 8) * 8;
+    size_t gy = ((static_cast<size_t>(config_.vy - 1) + 7) / 8) * 8;
+    size_t gz = ((static_cast<size_t>(config_.vz - 1) + 3) / 4) * 4;
+
     core::WorkSize classify_ws(
-        {static_cast<size_t>(config_.vx - 1), static_cast<size_t>(config_.vy - 1), static_cast<size_t>(config_.vz - 1)},
+        {gx, gy, gz},
         {8, 8, 4}
     );
     classify_kernel->dispatch(queue_, classify_ws);

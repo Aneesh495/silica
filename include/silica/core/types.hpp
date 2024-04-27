@@ -63,14 +63,30 @@ struct Dim3 {
 
 struct WorkSize {
     Dim3 global{1, 1, 1};
-    Dim3 local{1, 1, 1};
+    Dim3 local{0, 0, 0};
     size_t dimensions{1};
+
+    WorkSize() = default;
+
+    WorkSize(std::initializer_list<size_t> g, std::initializer_list<size_t> l = {}) {
+        dimensions = g.size();
+        auto git = g.begin();
+        if (dimensions >= 1) global.x = *git++;
+        if (dimensions >= 2) global.y = *git++;
+        if (dimensions >= 3) global.z = *git++;
+
+        auto lit = l.begin();
+        size_t l_size = l.size();
+        if (l_size >= 1) local.x = *lit++;
+        if (l_size >= 2) local.y = *lit++;
+        if (l_size >= 3) local.z = *lit++;
+    }
 
     static WorkSize make_1d(size_t global_x, size_t local_x = 0) {
         WorkSize ws;
         ws.dimensions = 1;
         ws.global = {global_x, 1, 1};
-        ws.local = {local_x, 1, 1};
+        ws.local = {local_x, 0, 0};
         return ws;
     }
 
@@ -78,7 +94,7 @@ struct WorkSize {
         WorkSize ws;
         ws.dimensions = 2;
         ws.global = {gx, gy, 1};
-        ws.local = {lx, ly, 1};
+        ws.local = {lx, ly, 0};
         return ws;
     }
 

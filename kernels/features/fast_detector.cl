@@ -47,7 +47,7 @@ __kernel void kernel_fast9_detect(
                      (p_south < p0 - threshold) +
                      (p_west  < p0 - threshold);
 
-    if (bright_count < 3 && dark_count < 3) {
+    if (bright_count < 2 && dark_count < 2) {
         out_corner_score[center_idx] = 0.0f;
         return;
     }
